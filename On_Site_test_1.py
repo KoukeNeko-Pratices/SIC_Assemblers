@@ -74,7 +74,7 @@ if __name__ == "__main__":
     for i in SIC_CMD_List:
         i.pass_2()   
     
-    with open("output1.txt", "w") as f:
+    with open("objectcode.txt", "w") as f:
         f.write(SIC_CMD_List[0].object_Code + f'{(current_Address - start_Address):x}'.rjust(6, '0').upper() + '\n')
         
         line_Start_Address = -1; line_Object_Code = str()
