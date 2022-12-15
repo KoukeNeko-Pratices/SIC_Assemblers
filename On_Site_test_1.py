@@ -6,7 +6,8 @@ SYMTAB = dict() # string, int
 Opcode = { 
     "Add": "18","AND": "40","COMP": "28","DIV": "24","J": "3C","JEQ": "30","JGT": "34","JLT": "38","JSUB": "48","LDA": "00","LDCH": "50","LDL": "08","LDX": "04","MUL": "20","OR": "44","RD": "D8","RSUB": "4C","STA": "0C","STCH": "54","STL": "14","STSW": "E8","STX": "10","SUB": "1C","TD": "E0","TIX": "2C","WD": "DC"
 }
-
+output = list()
+loc = list()
 class SIC: 
     def __init__(self, line: str):
         print(line)
@@ -35,7 +36,7 @@ class SIC:
                     self.object_Code = self.operands[2:-1].encode().hex()
                 self.length = len(self.object_Code) // 2
             case 'WORD':
-                self.object_Code = str(int(self.operands)).zfill(6)
+                self.object_Code = hex(int(self.operands)).lstrip("0x").zfill(6)
                 self.length = 3
             case 'RESB':
                 self.length = int(self.operands)
@@ -49,12 +50,22 @@ class SIC:
     
     def pass_2(self):
         if self.isDirectives:
+            output.append(f"{self.address:04X}\t{self.address_Label}\t{self.mnemonic_Opcode}\t{self.operands}")
+            if self.mnemonic_Opcode in ["BYTE","WORD"]:
+                output.append(f"\t{self.object_Code}")
+            output.append("\n")
             return
         addressing_Mode = 0      
         if self.operands != '' and self.operands.endswith(',X'):
             addressing_Mode = 0x8000
             self.operands = self.operands.removesuffix(',X')
         self.object_Code = Opcode[self.mnemonic_Opcode] + hex(SYMTAB[self.operands] + addressing_Mode).removeprefix('0x').rjust(4, '0')
+        
+        output.append(f"{self.address:04X}\t{self.address_Label}\t{self.mnemonic_Opcode}\t{self.operands}")
+        # if not self.isDirectives or self.mnemonic_Opcode == "BYTE" or self.mnemonic_Opcode == "WORD":
+        output.append(f"\t{self.object_Code.upper()}") #hex(int(string))
+        output.append("\n")
+
     
     def pass_1(self):
         global current_Address
@@ -62,6 +73,9 @@ class SIC:
         current_Address += self.cal_Size() #下一個指令的起始位置
         if self.address_Label != '':
             SYMTAB.update({self.address_Label: self.address})
+        # output to loc
+        loc.append(f"{self.address:04X}\t{self.address_Label}\t{self.mnemonic_Opcode}\t{self.operands}\n")
+
         
 if __name__ == "__main__":
 
@@ -93,3 +107,11 @@ if __name__ == "__main__":
                 line_Object_Code = str()
                 
         f.write(SIC_CMD_List[-1].object_Code.upper())
+        
+    with open("loc.txt", "w") as f:
+        for line in loc:
+            f.write(line)
+    
+    with open("output.txt", "w") as f:    
+       for line in output:
+            f.write(line.upper())         
